@@ -8,6 +8,13 @@ from checkers.consts import EM, PAWN_COLOR, KING_COLOR, OPPONENT_COLOR, MAX_TURN
 import time
 from collections import defaultdict
 
+# ===============================================================================
+# Globals
+# ===============================================================================
+
+PAWN_WEIGHT = 1
+KING_WEIGHT = 1.5
+
 
 # ===============================================================================
 # Player
@@ -88,27 +95,28 @@ class Player(abstract.AbstractPlayer):
         if state.turns_since_last_jump >= MAX_TURNS_NO_JUMP:
             return 0
 
-        red_players = 0
-        black_players = 0
+        piece_counts = defaultdict(lambda: 0)
+
+        piece_count = 0
+        dist_red = 0
+        dist_black = 0
         for location in state.board:
-            if state.board[location] != EM:
-                value = state.board[location]
-                if value == 'r':
-                    red_players += location[0] + 1
-                if value == 'b':
-                    black_players += 8 - location[0]
-                if value == 'R':
-                    red_players += 10
-                if value == 'B':
-                    black_players += 10
+            loc_val = state.board[location]
+            if loc_val != EM:
+                piece_count += 1
+                piece_counts[loc_val] += 1
+                if loc_val == 'r':
+                    dist_red += location[0] + 1
+                if loc_val == 'b':
+                    dist_black += 8 - location[0]
+        opponent_color = OPPONENT_COLOR[self.color]
 
-        if self.color == 'red':
-            my_u = red_players
-            op_u = black_players
-        else:
-            my_u = black_players
-            op_u = red_players
-
+        my_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[self.color]]) +
+                (KING_WEIGHT * piece_counts[KING_COLOR[self.color]]))
+        my_u *= 8
+        op_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[opponent_color]]) +
+                (KING_WEIGHT * piece_counts[KING_COLOR[opponent_color]]))
+        op_u *= 8
         if my_u == 0:
             # I have no tools left
             return -INFINITY
@@ -116,7 +124,20 @@ class Player(abstract.AbstractPlayer):
             # The opponent has no tools left
             return INFINITY
         else:
-            return my_u - op_u
+            avg_red = 0
+            avg_black = 0
+            if piece_counts[PAWN_COLOR['red']] != 0:
+                avg_red = dist_red / piece_counts[PAWN_COLOR['red']]
+            if piece_counts[PAWN_COLOR['black']] != 0:
+                avg_black = dist_red / piece_counts[PAWN_COLOR['black']]
+
+            if self.color == 'red':
+                my_u += avg_red
+                op_u += avg_black
+            else:
+                my_u += avg_black
+                op_u += avg_red
+            return my_u - op_u #+ (0.25 - piece_count/96)
 
     def selective_deepening_criterion(self, state):
         # Simple player does not selectively deepen into certain nodes.
@@ -126,6 +147,6 @@ class Player(abstract.AbstractPlayer):
         return (time.process_time() - self.clock) >= self.time_for_current_move
 
     def __repr__(self):
-        return '{} {}'.format(abstract.AbstractPlayer.__repr__(self), 'simple')
+        return '{} {}'.format(abstract.AbstractPlayer.__repr__(self), 'better')
 
 # c:\python35\python.exe run_game.py 3 3 3 y simple_player random_player

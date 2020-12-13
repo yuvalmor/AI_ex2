@@ -53,4 +53,4 @@ OPPONENT_COLOR = {
 }
 
 # Max turns since last Jump
-MAX_TURNS_NO_JUMP = 50
+MAX_TURNS_NO_JUMP = 25
