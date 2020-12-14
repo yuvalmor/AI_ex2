@@ -97,40 +97,19 @@ class Player(abstract.AbstractPlayer):
         if state.turns_since_last_jump >= MAX_TURNS_NO_JUMP:
             return 0
 
-        red_score = 0
-        black_score = 0
-        black_pawn = 0
-        red_pawn = 0
-        black_king = 0
-        red_king = 0
+        piece_counts = defaultdict(lambda: 0)
+        piece_locations = defaultdict(lambda: [])
         for location in state.board:
             loc_val = state.board[location]
             if loc_val != EM:
-                if loc_val == 'r' and location[0] > 3:
-                    red_score += PAWN_HALF_WEIGHT
-                    red_pawn += 1
-                if loc_val == 'r' and location[0] <= 3:
-                    red_score += PAWN_WEIGHT
-                    red_pawn += 1
-                if loc_val == 'b' and location[0] < 3:
-                    black_score += PAWN_HALF_WEIGHT
-                    black_pawn += 1
-                if loc_val == 'b' and location[0] >= 3:
-                    black_score += PAWN_WEIGHT
-                    black_pawn += 1
-                if loc_val == 'B':
-                    black_score += KING_WEIGHT
-                    black_king += 1
-                if loc_val == 'R':
-                    red_score += KING_WEIGHT
-                    red_king += 1
+                piece_counts[loc_val] += 1
+                piece_locations[loc_val].append(location)
 
-        if self.color == 'red':
-            my_u = red_score
-            op_u = black_score
-        else:
-            my_u = black_score
-            op_u = red_score
+        opponent_color = OPPONENT_COLOR[self.color]
+        my_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[self.color]]) +
+                (KING_WEIGHT * piece_counts[KING_COLOR[self.color]]))
+        op_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[opponent_color]]) +
+                (KING_WEIGHT * piece_counts[KING_COLOR[opponent_color]]))
 
         if my_u == 0:
             # I have no tools left
@@ -138,25 +117,16 @@ class Player(abstract.AbstractPlayer):
         elif op_u == 0:
             # The opponent has no tools left
             return INFINITY
-        if red_pawn == 0 and black_pawn == 0:
-            if self.color == 'red':
-                king = 'R'
-                opp_king = 'B'
-            else:
-                king = 'B'
-                opp_king = 'R'
-            for location in state.board:
-                total_dist = 0
-                if state.board[location] == king:
-                    for l in state.board:
-                        if state.board[location] == opp_king:
-                            total_dist += math.sqrt(((location[0] - l[0]) ** 2) + ((location[1] - l[1]) ** 2))
-
-            if self.color == 'red' and red_king > black_king or self.color == 'black' and black_king > red_king:
-                return 1/total_dist
-            else:
-                total_dist
         else:
+            dist = 0
+            for king_loc in piece_locations[KING_COLOR[self.color]]:
+                for opp_king_loc in piece_locations[KING_COLOR[opponent_color]]:
+                    dist += math.sqrt(((king_loc[0] - opp_king_loc[0]) ** 2) + ((king_loc[1] - opp_king_loc[1]) ** 2))
+            if piece_counts[KING_COLOR[self.color]] < piece_counts[KING_COLOR[opponent_color]]:
+                my_u += dist
+            if piece_counts[KING_COLOR[self.color]] > piece_counts[KING_COLOR[opponent_color]] and dist != 0:
+                my_u += 1/dist
+
             return my_u - op_u
 
     def selective_deepening_criterion(self, state):
@@ -167,6 +137,6 @@ class Player(abstract.AbstractPlayer):
         return (time.process_time() - self.clock) >= self.time_for_current_move
 
     def __repr__(self):
-        return '{} {}'.format(abstract.AbstractPlayer.__repr__(self), 'simple')
+        return '{} {}'.format(abstract.AbstractPlayer.__repr__(self), 'better')
 
 # c:\python35\python.exe run_game.py 3 3 3 y simple_player random_player
