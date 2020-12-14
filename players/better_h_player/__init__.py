@@ -13,9 +13,9 @@ from collections import defaultdict
 # Globals
 # ===============================================================================
 
-PAWN_WEIGHT = 5
+PAWN_WEIGHT = 1
 PAWN_HALF_WEIGHT = 7
-KING_WEIGHT = 10
+KING_WEIGHT = 1.5
 
 
 # ===============================================================================
@@ -118,15 +118,16 @@ class Player(abstract.AbstractPlayer):
             # The opponent has no tools left
             return INFINITY
         else:
-            dist = 0
-            for king_loc in piece_locations[KING_COLOR[self.color]]:
-                for opp_king_loc in piece_locations[KING_COLOR[opponent_color]]:
-                    dist += math.sqrt(((king_loc[0] - opp_king_loc[0]) ** 2) + ((king_loc[1] - opp_king_loc[1]) ** 2))
-            if piece_counts[KING_COLOR[self.color]] < piece_counts[KING_COLOR[opponent_color]]:
-                my_u += dist
-            if piece_counts[KING_COLOR[self.color]] > piece_counts[KING_COLOR[opponent_color]] and dist != 0:
-                my_u += 1/dist
-
+            if piece_counts[PAWN_COLOR[self.color]] == 0:
+                dist = 0
+                for king_loc in piece_locations[KING_COLOR[self.color]]:
+                    for opp_loc in piece_locations[KING_COLOR[opponent_color]] + piece_locations[PAWN_COLOR[opponent_color]]:
+                        dist += math.sqrt(
+                            ((king_loc[0] - opp_loc[0]) ** 2) + ((king_loc[1] - opp_loc[1]) ** 2))
+                if piece_counts[KING_COLOR[self.color]] < piece_counts[KING_COLOR[opponent_color]]:
+                    my_u += dist
+                if piece_counts[KING_COLOR[self.color]] > piece_counts[KING_COLOR[opponent_color]] and dist != 0:
+                    my_u += 1 / dist
             return my_u - op_u
 
     def selective_deepening_criterion(self, state):
