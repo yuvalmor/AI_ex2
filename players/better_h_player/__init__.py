@@ -1,7 +1,6 @@
 # ===============================================================================
 # Imports
 # ===============================================================================
-import math
 
 import abstract
 from utils import MiniMaxWithAlphaBetaPruning, INFINITY, run_with_limited_time, ExceededTimeError
@@ -14,13 +13,12 @@ from collections import defaultdict
 # ===============================================================================
 
 PAWN_WEIGHT = 1
-PAWN_HALF_WEIGHT = 7
 KING_WEIGHT = 1.5
-
 
 # ===============================================================================
 # Player
 # ===============================================================================
+
 
 class Player(abstract.AbstractPlayer):
     def __init__(self, setup_time, player_color, time_per_k_turns, k):
@@ -92,25 +90,23 @@ class Player(abstract.AbstractPlayer):
         return best_move
 
     def utility(self, state):
-        if len(state.get_possible_moves()) == 0:
+        possible_moves = state.get_possible_moves()
+        if len(possible_moves) == 0:
             return INFINITY if state.curr_player != self.color else -INFINITY
         if state.turns_since_last_jump >= MAX_TURNS_NO_JUMP:
             return 0
 
         piece_counts = defaultdict(lambda: 0)
-        piece_locations = defaultdict(lambda: [])
-        for location in state.board:
-            loc_val = state.board[location]
+        for loc_val in state.board.values():
             if loc_val != EM:
                 piece_counts[loc_val] += 1
-                piece_locations[loc_val].append(location)
 
         opponent_color = OPPONENT_COLOR[self.color]
+
         my_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[self.color]]) +
                 (KING_WEIGHT * piece_counts[KING_COLOR[self.color]]))
         op_u = ((PAWN_WEIGHT * piece_counts[PAWN_COLOR[opponent_color]]) +
                 (KING_WEIGHT * piece_counts[KING_COLOR[opponent_color]]))
-
         if my_u == 0:
             # I have no tools left
             return -INFINITY
@@ -118,16 +114,12 @@ class Player(abstract.AbstractPlayer):
             # The opponent has no tools left
             return INFINITY
         else:
-            if piece_counts[PAWN_COLOR[self.color]] == 0:
-                dist = 0
-                for king_loc in piece_locations[KING_COLOR[self.color]]:
-                    for opp_loc in piece_locations[KING_COLOR[opponent_color]] + piece_locations[PAWN_COLOR[opponent_color]]:
-                        dist += math.sqrt(
-                            ((king_loc[0] - opp_loc[0]) ** 2) + ((king_loc[1] - opp_loc[1]) ** 2))
-                if piece_counts[KING_COLOR[self.color]] < piece_counts[KING_COLOR[opponent_color]]:
-                    my_u += dist
-                if piece_counts[KING_COLOR[self.color]] > piece_counts[KING_COLOR[opponent_color]] and dist != 0:
-                    my_u += 1 / dist
+            if ((possible_moves[0].player_type in [PAWN_COLOR[self.color], KING_COLOR[self.color]])and
+                    possible_moves[0].jumped_locs):
+                my_u += 1
+            if ((possible_moves[0].player_type in [PAWN_COLOR[opponent_color], KING_COLOR[opponent_color]])and
+                    possible_moves[0].jumped_locs):
+                my_u -= 1
             return my_u - op_u
 
     def selective_deepening_criterion(self, state):
