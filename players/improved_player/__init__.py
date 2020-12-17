@@ -28,21 +28,27 @@ class Player(abstract.AbstractPlayer):
         # We are simply providing (remaining time / remaining turns) for each turn in round.
         # Taking a spare time of 0.05 seconds.
         self.turns_remaining_in_round = self.k
-        self.time_remaining_in_round = 0
-        self.long_turn = (time_per_k_turns / k) - 0.05
-        self.short_turn = (time_per_k_turns / (k+3)) - 0.05
+        self.time_remaining_in_round = self.time_per_k_turns
         #self.time_for_current_move = self.time_remaining_in_round / self.turns_remaining_in_round - 0.05
 
     def get_move(self, game_state, possible_moves):
         self.clock = time.process_time()
+
         if self.turns_remaining_in_round == 1:
             self.time_for_current_move = self.time_remaining_in_round - 0.05
         else:
-            self.time_for_current_move = self.short_turn if self.utility(game_state) > 0 else self.long_turn
+            # long tern
+            if self.utility(game_state) >= -1 and self.utility(game_state) <= 1:
+                self.time_for_current_move = (4 * self.time_remaining_in_round) / self.turns_remaining_in_round
+            # short tern
+            else:
+                self.time_for_current_move = self.time_remaining_in_round / self.turns_remaining_in_round
+
+
 
         if len(possible_moves) == 1:
             self.turns_remaining_in_round -= 1
-            self.time_remaining_in_round = (time.process_time() - self.clock)
+            self.time_remaining_in_round -= (time.process_time() - self.clock)
             return possible_moves[0]
 
         current_depth = 1
