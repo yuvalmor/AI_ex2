@@ -39,7 +39,7 @@ class Player(abstract.AbstractPlayer):
         else:
             # long tern
             if self.utility(game_state) >= -1 and self.utility(game_state) <= 1:
-                self.time_for_current_move = (2 * (self.time_remaining_in_round / self.turns_remaining_in_round)) - 0.05
+                self.time_for_current_move = 1.5 * (self.time_remaining_in_round / self.turns_remaining_in_round) - 0.05
             # short tern
             else:
                 self.time_for_current_move = self.time_remaining_in_round / self.turns_remaining_in_round - 0.05
