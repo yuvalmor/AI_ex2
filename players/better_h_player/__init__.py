@@ -114,10 +114,10 @@ class Player(abstract.AbstractPlayer):
             # The opponent has no tools left
             return INFINITY
         else:
-            if ((possible_moves[0].player_type in [PAWN_COLOR[self.color], KING_COLOR[self.color]])and
+            if ((possible_moves[0].player_type in [PAWN_COLOR[self.color], KING_COLOR[self.color]]) and
                     possible_moves[0].jumped_locs):
                 my_u += 1
-            if ((possible_moves[0].player_type in [PAWN_COLOR[opponent_color], KING_COLOR[opponent_color]])and
+            if ((possible_moves[0].player_type in [PAWN_COLOR[opponent_color], KING_COLOR[opponent_color]]) and
                     possible_moves[0].jumped_locs):
                 my_u -= 1
             return my_u - op_u
